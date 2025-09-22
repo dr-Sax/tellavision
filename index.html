@@ -2,13 +2,8 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- Add CSP meta tag to allow unsafe-eval for MindAR -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https: *; object-src 'none';">
-    
-    <!-- Load A-Frame first, then MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
     <style>
       #startButton {
         position: fixed;
@@ -42,12 +37,6 @@
       .hidden {
         display: none !important;
       }
-
-      /* Ensure the scene takes full viewport */
-      a-scene {
-        width: 100%;
-        height: 100vh;
-      }
     </style>
   </head>
   <body>
@@ -56,168 +45,180 @@
       <button>Tap to Start magARzine</button>
     </div>
     
-    <!-- AR scene with fixed raycaster configuration -->
-    <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind;" 
-      vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false" 
-      loading-screen="enabled: false" 
-      embedded 
-      arjs="trackingMethod: best; debugUIEnabled: false;">
+    <!-- creating the AR scene, assets, camera positioning, and video object  -->
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" loading-screen="enabled: false" embedded arjs="trackingMethod: best; debugUIEnabled: false;">
 
       <!-- loading video assets -->
       <a-assets>
-        <video 
-          preload="auto" 
-          crossorigin="anonymous" 
-          webkit-playsinline 
-          playsinline 
-          id="remixin" 
-          muted 
-          loop="true" 
-          src="https://res.cloudinary.com/dwktorq0n/video/upload/v1742393143/remixin-design-history-480-compressed_zp5nrz.mp4">
-        </video>
+        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="remixin" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1742393143/remixin-design-history-480-compressed_zp5nrz.mp4"></video>
+        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="allstar-web-cut" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1747006533/allstar-web-cutup-vid_fmdatg.mp4"></video>
+        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="allstar" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1747106675/allstar_remix_recoded_vmp566.mp4"></video>        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="amb" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1747006497/amb-vid_1_b8b3vw.mp4"></video>
+        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="amb-web-cut" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1747006644/amb-web-cutup_full_ozgxuv.mp4"></video>
+
       </a-assets>
 
-      <!-- Fixed camera setup - removed problematic template literal -->
-      <a-camera 
-        position="0 0 0" 
-        look-controls="enabled: false" 
-        cursor="fuse: false; rayOrigin: mouse;" 
-        raycaster="far: 1000; objects: .clickable">
-      </a-camera>
+      <!-- camera setup for mobile with cursors for augment object clicking response -->
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: ${customFields.libVersion}; objects: .clickable"></a-camera>
 
       <!-- Remixin Page Contents -->
-      <a-entity id="remixin-target" mindar-image-target="targetIndex: 2">
-        <a-video 
-          id="remixin-vid" 
-          src="#remixin" 
-          width="1" 
-          height="1.778" 
-          position="1 0 0">
-        </a-video>
-        <a-plane 
-          src="playlist_imgs/remixin-playlist-img.png" 
-          id="remixin-ref-plane" 
-          class="clickable" 
-          position="0 1 0" 
-          height="0.552" 
-          width="1" 
-          rotation="0 0 0">
-        </a-plane>
+      <a-entity id = "remixin-target" mindar-image-target="targetIndex: 2">
+        <a-video id="remixin-vid" src="#remixin" width="1" height="1.778" position="1 0 0"></a-video>
+        <a-plane src = "playlist_imgs/remixin-playlist-img.png" id="remixin-ref-plane" class="clickable" position="0 1 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
       </a-entity>
 
-    </a-scene>
+      <!-- allstar Page Contents -->
+      <a-entity id = "allstar-target" mindar-image-target="targetIndex: 0">
+        <a-video src="#allstar-web-cut" width="1" height="1.5" position="1 0 0"></a-video>
+        <a-video src="#allstar" width="1.778" height="1" position=".5 -1.25 0"></a-video>
+        <a-plane src = "playlist_imgs/allstar-playlist-img.png" id="allstar-ref-plane" class="clickable" position="0.5 1.05 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      </a-entity>
 
-    <script>
-      // Wait for both A-Frame and MindAR to be fully loaded
-      function initializeApp() {
-        // Check if AFRAME is available
-        if (typeof AFRAME === 'undefined') {
-          console.error('AFRAME is not loaded yet');
-          setTimeout(initializeApp, 100);
-          return;
-        }
+      <!-- amb Page Contents -->
+      <a-entity id = "amb-target" mindar-image-target="targetIndex: 1">
+        <a-video src="#amb" width="1.778" height="1" position="0.5 -1.25 0"></a-video>
+        <a-video src="#amb-web-cut" width="1" height="1.5" position="1 0 0"></a-video>
+        <a-plane src = "playlist_imgs/amb-playlist-img.png" id="amb-ref-plane" class="clickable" position="0.5 1.05 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      </a-entity>
 
-        // Get start button and video elements
-        const startButton = document.querySelector('#startButton');
-        const startButtonElement = startButton.querySelector('button');
-        const remixinVideo = document.querySelector('#remixin');
-        const videos = [remixinVideo];
-        
-        // Get scene element
-        const sceneEl = document.querySelector('a-scene');
-        let arSystem;
-        
-        // Wait for scene to be ready
-        if (sceneEl.hasLoaded) {
-          setupARSystem();
-        } else {
-          sceneEl.addEventListener('loaded', setupARSystem);
-        }
+  </a-scene>
 
-        function setupARSystem() {
-          try {
-            arSystem = sceneEl.systems["mindar-image-system"];
-            
-            // Stop tracking until user starts
-            if (arSystem) {
-              arSystem.stop();
-            }
-          } catch (error) {
-            console.warn('AR system not ready yet, will retry on user interaction:', error);
-          }
-        }
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Get start button and video elements
+      const startButton = document.querySelector('#startButton');
+      const startButtonElement = startButton.querySelector('button');
+      const remixinVideo = document.querySelector('#remixin');
+      const allstarVideo = document.querySelector('#allstar');
+      const ambVideo = document.querySelector('#amb');
+      const videos = [remixinVideo, allstarVideo, ambVideo];
+      
+      // Disable scene and AR initially
+      const sceneEl = document.querySelector('a-scene');
+      let arSystem;
+      
+      sceneEl.addEventListener('loaded', function () {
+        arSystem = sceneEl.systems["mindar-image-system"];
         
-        // Start button click handler
-        startButtonElement.addEventListener('click', function() {
-          // Hide the start button
-          startButton.classList.add('hidden');
+        // Stop tracking until user starts
+        if (arSystem) {
+          arSystem.stop();
+        }
+      });
+      
+      // Start button click handler
+      startButtonElement.addEventListener('click', function() {
+        // Hide the start button
+        startButton.classList.add('hidden');
+        
+        // Preload videos - important for mobile browsers
+        videos.forEach(video => {
+          video.muted = true;
+          video.load();
           
-          // Preload videos - important for mobile browsers
-          videos.forEach(video => {
-            video.muted = true;
-            video.load();
-            
-            // Try to play and immediately pause to satisfy user interaction requirement
-            video.play().then(() => {
-              video.pause();
-            }).catch(e => console.log('Initial play failed:', e));
-          });
-          
-          // Start AR experience with error handling
-          setTimeout(() => {
-            try {
-              if (!arSystem) {
-                arSystem = sceneEl.systems["mindar-image-system"];
-              }
-              
-              if (arSystem) {
-                arSystem.start();
-              } else {
-                console.error('AR system not available');
-              }
-            } catch (error) {
-              console.error('Failed to start AR system:', error);
-            }
-          }, 100);
+          // Try to play and immediately pause to satisfy user interaction requirement
+          video.play().then(() => {
+            video.pause();
+          }).catch(e => console.log('Initial play failed:', e));
         });
         
-        //////////////////////////////////////////////////////////////////////////////////////////
-        // remixin marker functionality
-        const remixin = document.querySelector('#remixin');
-        const remixin_target = document.querySelector('#remixin-target');
-        const remixin_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJmx36POkBNJja83AKyVRRXr&si=3ygW3EGi387CiPov";
-        
-        // detect target found
-        remixin_target.addEventListener("targetFound", event => {
-          console.log("remixin target found");
-          remixin.muted = false;
-          remixin.play().catch(e => console.log('Play attempt failed:', e));
-        });
+        // Start AR experience
+        if (arSystem) {
+          arSystem.start();
+        }
+      });
+      
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // remixin marker functionality
+      const remixin = document.querySelector('#remixin');
+      const remixin_target = document.querySelector('#remixin-target');
+      const remixin_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJmx36POkBNJja83AKyVRRXr&si=3ygW3EGi387CiPov";
+      
+      // detect target found
+      remixin_target.addEventListener("targetFound", event => {
+        console.log("remixin target found");
+        remixin.muted = false;
+        remixin.play().catch(e => console.log('Play attempt failed:', e));
+      });
 
-        // detect target lost
-        remixin_target.addEventListener("targetLost", event => {
-          console.log("remixin target lost");
-          remixin.pause().catch(e => console.log('pause attempt fail', e));
-        });
+      // detect target lost
+      remixin_target.addEventListener("targetLost", event => {
+        console.log("remixin target lost");
+        remixin.pause().catch(e => console.log('pause attempt fail', e));
+      });
 
-        // detect click event
-        const remixin_ref_plane = document.querySelector('#remixin-ref-plane');
-        remixin_ref_plane.addEventListener("click", event => {
-          console.log("remixin plane click");
-          window.open(remixin_yt_playlist, "_self");
-        });
-        //////////////////////////////////////////////////////////////////////////////////////////
-      }
+      // detect click event
+      const remixin_ref_plane = document.querySelector('#remixin-ref-plane');
+      remixin_ref_plane.addEventListener("click", event => {
+        console.log("remxin plane click");
+        window.open(remixin_yt_playlist, "_self");
+      });
+      //////////////////////////////////////////////////////////////////////////////////////////
 
-      // Initialize when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeApp);
-      } else {
-        initializeApp();
-      }
-    </script>
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // allstar marker functionality
+      const allstar = document.querySelector('#allstar');
+      const allstar_web_cut = document.querySelector('#allstar-web-cut');
+      const allstar_target = document.querySelector('#allstar-target');
+      const allstar_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJkfHOBP742jDTdeJmM8AQoE&si=_tbihQS-zM-ujTXK";
+      
+      // detect target found
+      allstar_target.addEventListener("targetFound", event => {
+        console.log("allstar target found");
+        allstar.muted = false;
+        allstar_web_cut.muted = true;
+        allstar.play().catch(e => console.log('Play attempt fail', e));
+        allstar_web_cut.play().catch(e => console.log('Play attempt fail', e));
+      });
+
+      // detect target lost
+      allstar_target.addEventListener("targetLost", event => {
+        console.log("allstar target lost");
+        allstar.pause().catch(e => console.log('pause attempt fail', e));
+        allstar_web_cut.pause().catch(e => console.log('pause attempt fail', e));
+      });
+
+      // detect click event
+      const allstar_ref_plane = document.querySelector('#allstar-ref-plane');
+      allstar_ref_plane.addEventListener("click", event => {
+        console.log("plane click");
+        window.open(allstar_yt_playlist, "_self");
+      });
+      //////////////////////////////////////////////////////////////////////////////////////////
+
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // amb marker functionality
+      const amb = document.querySelector('#amb');
+      const amb_web_cut = document.querySelector('#amb-web-cut');
+      const amb_target = document.querySelector('#amb-target');
+      const amb_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJlLzF0K98KrtZ2FHwNwejD6&si=sTaENt1G2qz6htXD";
+      
+      // detect target found
+      amb_target.addEventListener("targetFound", event => {
+        console.log("amb target found");
+        amb.muted = false;
+        amb_web_cut.muted = true;
+        amb.play().catch(e => console.log('Play attempt fail', e));
+        amb_web_cut.play().catch(e => console.log('Play attempt fail', e));
+      });
+
+      // detect target lost
+      amb_target.addEventListener("targetLost", event => {
+        console.log("amb target lost");
+        amb.pause().catch(e => console.log('pause attempt fail', e));
+        amb_web_cut.pause().catch(e => console.log('pause attempt fail', e));
+      });
+
+      // detect click event
+      const amb_ref_plane = document.querySelector('#amb-ref-plane');
+      amb_ref_plane.addEventListener("click", event => {
+        console.log("plane click");
+        window.open(amb_yt_playlist, "_self");
+      });
+      //////////////////////////////////////////////////////////////////////////////////////////
+
+    });
+  </script>
 
   </body>
 </html>
