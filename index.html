@@ -2,8 +2,13 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Add CSP meta tag to allow unsafe-eval for MindAR -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https: *; object-src 'none';">
+    
+    <!-- Load A-Frame first, then MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
       #startButton {
         position: fixed;
@@ -37,6 +42,12 @@
       .hidden {
         display: none !important;
       }
+
+      /* Ensure the scene takes full viewport */
+      a-scene {
+        width: 100%;
+        height: 100vh;
+      }
     </style>
   </head>
   <body>
@@ -45,96 +56,168 @@
       <button>Tap to Start magARzine</button>
     </div>
     
-    <!-- creating the AR scene, assets, camera positioning, and video object  -->
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" loading-screen="enabled: false" embedded arjs="trackingMethod: best; debugUIEnabled: false;">
+    <!-- AR scene with fixed raycaster configuration -->
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets.mind;" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false" 
+      loading-screen="enabled: false" 
+      embedded 
+      arjs="trackingMethod: best; debugUIEnabled: false;">
 
       <!-- loading video assets -->
       <a-assets>
-        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="remixin" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1742393143/remixin-design-history-480-compressed_zp5nrz.mp4"></video>
+        <video 
+          preload="auto" 
+          crossorigin="anonymous" 
+          webkit-playsinline 
+          playsinline 
+          id="remixin" 
+          muted 
+          loop="true" 
+          src="https://res.cloudinary.com/dwktorq0n/video/upload/v1742393143/remixin-design-history-480-compressed_zp5nrz.mp4">
+        </video>
       </a-assets>
 
-      <!-- camera setup for mobile with cursors for augment object clicking response -->
-      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: ${customFields.libVersion}; objects: .clickable"></a-camera>
+      <!-- Fixed camera setup - removed problematic template literal -->
+      <a-camera 
+        position="0 0 0" 
+        look-controls="enabled: false" 
+        cursor="fuse: false; rayOrigin: mouse;" 
+        raycaster="far: 1000; objects: .clickable">
+      </a-camera>
 
       <!-- Remixin Page Contents -->
-      <a-entity id = "remixin-target" mindar-image-target="targetIndex: 2">
-        <a-video id="remixin-vid" src="#remixin" width="1" height="1.778" position="1 0 0"></a-video>
-        <a-plane src = "playlist_imgs/remixin-playlist-img.png" id="remixin-ref-plane" class="clickable" position="0 1 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      <a-entity id="remixin-target" mindar-image-target="targetIndex: 2">
+        <a-video 
+          id="remixin-vid" 
+          src="#remixin" 
+          width="1" 
+          height="1.778" 
+          position="1 0 0">
+        </a-video>
+        <a-plane 
+          src="playlist_imgs/remixin-playlist-img.png" 
+          id="remixin-ref-plane" 
+          class="clickable" 
+          position="0 1 0" 
+          height="0.552" 
+          width="1" 
+          rotation="0 0 0">
+        </a-plane>
       </a-entity>
 
-  </a-scene>
+    </a-scene>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      // Get start button and video elements
-      const startButton = document.querySelector('#startButton');
-      const startButtonElement = startButton.querySelector('button');
-      const remixinVideo = document.querySelector('#remixin');
-      const videos = [remixinVideo];
-      
-      // Disable scene and AR initially
-      const sceneEl = document.querySelector('a-scene');
-      let arSystem;
-      
-      sceneEl.addEventListener('loaded', function () {
-        arSystem = sceneEl.systems["mindar-image-system"];
-        
-        // Stop tracking until user starts
-        if (arSystem) {
-          arSystem.stop();
+    <script>
+      // Wait for both A-Frame and MindAR to be fully loaded
+      function initializeApp() {
+        // Check if AFRAME is available
+        if (typeof AFRAME === 'undefined') {
+          console.error('AFRAME is not loaded yet');
+          setTimeout(initializeApp, 100);
+          return;
         }
-      });
-      
-      // Start button click handler
-      startButtonElement.addEventListener('click', function() {
-        // Hide the start button
-        startButton.classList.add('hidden');
+
+        // Get start button and video elements
+        const startButton = document.querySelector('#startButton');
+        const startButtonElement = startButton.querySelector('button');
+        const remixinVideo = document.querySelector('#remixin');
+        const videos = [remixinVideo];
         
-        // Preload videos - important for mobile browsers
-        videos.forEach(video => {
-          video.muted = true;
-          video.load();
+        // Get scene element
+        const sceneEl = document.querySelector('a-scene');
+        let arSystem;
+        
+        // Wait for scene to be ready
+        if (sceneEl.hasLoaded) {
+          setupARSystem();
+        } else {
+          sceneEl.addEventListener('loaded', setupARSystem);
+        }
+
+        function setupARSystem() {
+          try {
+            arSystem = sceneEl.systems["mindar-image-system"];
+            
+            // Stop tracking until user starts
+            if (arSystem) {
+              arSystem.stop();
+            }
+          } catch (error) {
+            console.warn('AR system not ready yet, will retry on user interaction:', error);
+          }
+        }
+        
+        // Start button click handler
+        startButtonElement.addEventListener('click', function() {
+          // Hide the start button
+          startButton.classList.add('hidden');
           
-          // Try to play and immediately pause to satisfy user interaction requirement
-          video.play().then(() => {
-            video.pause();
-          }).catch(e => console.log('Initial play failed:', e));
+          // Preload videos - important for mobile browsers
+          videos.forEach(video => {
+            video.muted = true;
+            video.load();
+            
+            // Try to play and immediately pause to satisfy user interaction requirement
+            video.play().then(() => {
+              video.pause();
+            }).catch(e => console.log('Initial play failed:', e));
+          });
+          
+          // Start AR experience with error handling
+          setTimeout(() => {
+            try {
+              if (!arSystem) {
+                arSystem = sceneEl.systems["mindar-image-system"];
+              }
+              
+              if (arSystem) {
+                arSystem.start();
+              } else {
+                console.error('AR system not available');
+              }
+            } catch (error) {
+              console.error('Failed to start AR system:', error);
+            }
+          }, 100);
         });
         
-        // Start AR experience
-        if (arSystem) {
-          arSystem.start();
-        }
-      });
-      
-      //////////////////////////////////////////////////////////////////////////////////////////
-      // remixin marker functionality
-      const remixin = document.querySelector('#remixin');
-      const remixin_target = document.querySelector('#remixin-target');
-      const remixin_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJmx36POkBNJja83AKyVRRXr&si=3ygW3EGi387CiPov";
-      
-      // detect target found
-      remixin_target.addEventListener("targetFound", event => {
-        console.log("remixin target found");
-        remixin.muted = false;
-        remixin.play().catch(e => console.log('Play attempt failed:', e));
-      });
+        //////////////////////////////////////////////////////////////////////////////////////////
+        // remixin marker functionality
+        const remixin = document.querySelector('#remixin');
+        const remixin_target = document.querySelector('#remixin-target');
+        const remixin_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJmx36POkBNJja83AKyVRRXr&si=3ygW3EGi387CiPov";
+        
+        // detect target found
+        remixin_target.addEventListener("targetFound", event => {
+          console.log("remixin target found");
+          remixin.muted = false;
+          remixin.play().catch(e => console.log('Play attempt failed:', e));
+        });
 
-      // detect target lost
-      remixin_target.addEventListener("targetLost", event => {
-        console.log("remixin target lost");
-        remixin.pause().catch(e => console.log('pause attempt fail', e));
-      });
+        // detect target lost
+        remixin_target.addEventListener("targetLost", event => {
+          console.log("remixin target lost");
+          remixin.pause().catch(e => console.log('pause attempt fail', e));
+        });
 
-      // detect click event
-      const remixin_ref_plane = document.querySelector('#remixin-ref-plane');
-      remixin_ref_plane.addEventListener("click", event => {
-        console.log("remxin plane click");
-        window.open(remixin_yt_playlist, "_self");
-      });
-      //////////////////////////////////////////////////////////////////////////////////////////
-    });
-  </script>
+        // detect click event
+        const remixin_ref_plane = document.querySelector('#remixin-ref-plane');
+        remixin_ref_plane.addEventListener("click", event => {
+          console.log("remixin plane click");
+          window.open(remixin_yt_playlist, "_self");
+        });
+        //////////////////////////////////////////////////////////////////////////////////////////
+      }
+
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeApp);
+      } else {
+        initializeApp();
+      }
+    </script>
 
   </body>
 </html>
