@@ -1,0 +1,140 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      #startButton {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+        background-color: rgba(0, 0, 0, 0.8);
+      }
+      
+      #startButton button {
+        padding: 15px 40px;
+        background-color: #4CAF50;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      
+      #startButton button:hover {
+        background-color: #45a049;
+        transform: scale(1.05);
+      }
+      
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Start button overlay -->
+    <div id="startButton">
+      <button>Tap to Start magARzine</button>
+    </div>
+    
+    <!-- creating the AR scene, assets, camera positioning, and video object  -->
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" loading-screen="enabled: false" embedded arjs="trackingMethod: best; debugUIEnabled: false;">
+
+      <!-- loading video assets -->
+      <a-assets>
+        <video preload="auto" crossorigin="anonymous" webkit-playsinline playsinline id="remixin" muted loop="true" src="https://res.cloudinary.com/dwktorq0n/video/upload/v1742393143/remixin-design-history-480-compressed_zp5nrz.mp4"></video>
+      </a-assets>
+
+      <!-- camera setup for mobile with cursors for augment object clicking response -->
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: ${customFields.libVersion}; objects: .clickable"></a-camera>
+
+      <!-- Remixin Page Contents -->
+      <a-entity id = "remixin-target" mindar-image-target="targetIndex: 2">
+        <a-video id="remixin-vid" src="#remixin" width="1" height="1.778" position="1 0 0"></a-video>
+        <a-plane src = "playlist_imgs/remixin-playlist-img.png" id="remixin-ref-plane" class="clickable" position="0 1 0" height="0.552" width="1" rotation="0 0 0"></a-plane>
+      </a-entity>
+
+  </a-scene>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Get start button and video elements
+      const startButton = document.querySelector('#startButton');
+      const startButtonElement = startButton.querySelector('button');
+      const remixinVideo = document.querySelector('#remixin');
+      const videos = [remixinVideo];
+      
+      // Disable scene and AR initially
+      const sceneEl = document.querySelector('a-scene');
+      let arSystem;
+      
+      sceneEl.addEventListener('loaded', function () {
+        arSystem = sceneEl.systems["mindar-image-system"];
+        
+        // Stop tracking until user starts
+        if (arSystem) {
+          arSystem.stop();
+        }
+      });
+      
+      // Start button click handler
+      startButtonElement.addEventListener('click', function() {
+        // Hide the start button
+        startButton.classList.add('hidden');
+        
+        // Preload videos - important for mobile browsers
+        videos.forEach(video => {
+          video.muted = true;
+          video.load();
+          
+          // Try to play and immediately pause to satisfy user interaction requirement
+          video.play().then(() => {
+            video.pause();
+          }).catch(e => console.log('Initial play failed:', e));
+        });
+        
+        // Start AR experience
+        if (arSystem) {
+          arSystem.start();
+        }
+      });
+      
+      //////////////////////////////////////////////////////////////////////////////////////////
+      // remixin marker functionality
+      const remixin = document.querySelector('#remixin');
+      const remixin_target = document.querySelector('#remixin-target');
+      const remixin_yt_playlist = "https://youtube.com/playlist?list=PLZFNfQGtHiJmx36POkBNJja83AKyVRRXr&si=3ygW3EGi387CiPov";
+      
+      // detect target found
+      remixin_target.addEventListener("targetFound", event => {
+        console.log("remixin target found");
+        remixin.muted = false;
+        remixin.play().catch(e => console.log('Play attempt failed:', e));
+      });
+
+      // detect target lost
+      remixin_target.addEventListener("targetLost", event => {
+        console.log("remixin target lost");
+        remixin.pause().catch(e => console.log('pause attempt fail', e));
+      });
+
+      // detect click event
+      const remixin_ref_plane = document.querySelector('#remixin-ref-plane');
+      remixin_ref_plane.addEventListener("click", event => {
+        console.log("remxin plane click");
+        window.open(remixin_yt_playlist, "_self");
+      });
+      //////////////////////////////////////////////////////////////////////////////////////////
+    });
+  </script>
+
+  </body>
+</html>
